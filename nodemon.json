@@ -1,11 +1,9 @@
 {
     "exec": "wasm-pack build && next dev",
     "watch": [
-        "src/**/*.rs",
-        "app/**/*.ts",
-        "app/**/*.tsx",
-        "components/**/*.ts",
-        "components/**/*.tsx"
+        "src/",
+        "app/",
+        "components/"
     ],
-    "ext": "ts"
+    "ext": "ts, rs, tsx"
 }

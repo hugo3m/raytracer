@@ -1,5 +1,20 @@
 use crate::math::vec::Vec3;
 
+pub struct LightComputeInfo {
+    pub point: Vec3,
+    pub normal: Vec3,
+}
+
+impl LightComputeInfo {
+    pub fn new(point: Vec3, normal: Vec3) -> Self {
+        LightComputeInfo { point, normal }
+    }
+}
+
+pub trait Light {
+    fn compute(&self, info: &LightComputeInfo) -> f64;
+}
+
 pub struct LightAmbient {
     pub intensity: f64,
 }
@@ -8,8 +23,10 @@ impl LightAmbient {
     pub fn new(intensity: f64) -> Self {
         LightAmbient { intensity }
     }
+}
 
-    pub fn compute(&self) -> f64 {
+impl Light for LightAmbient {
+    fn compute(&self, _info: &LightComputeInfo) -> f64 {
         return self.intensity;
     }
 }
@@ -26,10 +43,13 @@ impl LightPoint {
             position,
         }
     }
+}
 
-    pub fn compute(&self, point: Vec3, normal: Vec3) -> f64 {
-        let direction = self.position - point;
-        return self.intensity * (direction.dot(normal) / (normal.norm() * direction.norm()));
+impl Light for LightPoint {
+    fn compute(&self, info: &LightComputeInfo) -> f64 {
+        let direction = self.position - info.point;
+        return self.intensity
+            * (direction.dot(info.normal) / (info.normal.norm() * direction.norm()));
     }
 }
 
@@ -45,9 +65,11 @@ impl LightDirectional {
             direction,
         }
     }
+}
 
-    pub fn compute(&self, normal: Vec3) -> f64 {
+impl Light for LightDirectional {
+    fn compute(&self, info: &LightComputeInfo) -> f64 {
         return self.intensity
-            * (self.direction.dot(normal) / (normal.norm() * self.direction.norm()));
+            * (self.direction.dot(info.normal) / (info.normal.norm() * self.direction.norm()));
     }
 }

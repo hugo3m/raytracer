@@ -5,7 +5,7 @@ pub mod math;
 pub mod render;
 
 use geometry::{
-    light::{LightAmbient, LightDirectional, LightPoint},
+    light::{Light, LightAmbient, LightComputeInfo, LightDirectional, LightPoint},
     sphere::Sphere,
 };
 use math::vec::Vec3;
@@ -35,6 +35,12 @@ pub fn draw(width: usize, height: usize) -> Vec<u8> {
         Sphere::new(Vec3::new(-10.0, 5.0, 50.0), 1.0, RGBA::new(0, 255, 0, 255)),
     ];
 
+    let lights: Vec<Box<dyn Light>> = vec![
+        Box::new(LightAmbient::new(0.2)),
+        Box::new(LightPoint::new(0.6, Vec3::new(-2.0, 1.0, 0.0))),
+        Box::new(LightDirectional::new(0.2, Vec3::new(1.0, 4.0, 4.0))),
+    ];
+
     for x in -canv.w_max..canv.w_max {
         for y in -canv.h_max + 1..canv.h_max {
             let viewport = canv.pixel_to_viewport(x, y);
@@ -43,7 +49,8 @@ pub fn draw(width: usize, height: usize) -> Vec<u8> {
             if opt_intersection.is_some() {
                 let (intersection, sphere) = opt_intersection.unwrap();
                 let normal = sphere.normal(intersection);
-                let color = sphere.color * compute_light(intersection, normal);
+                let light_compute_info = LightComputeInfo::new(intersection, normal);
+                let color = sphere.color * compute_light(&lights, &light_compute_info);
                 canv.set_pixel_from_rgba(x, y, &color);
             } else {
                 canv.set_pixel(x, y, 255, 255, 255, 255);
@@ -74,11 +81,10 @@ fn find_intersection(
     return opt_result;
 }
 
-fn compute_light(point: Vec3, normal: Vec3) -> f64 {
-    let ambient_light = LightAmbient::new(0.2);
-    let point_light = LightPoint::new(0.6, Vec3::new(-2.0, 1.0, 0.0));
-    let directional_light = LightDirectional::new(0.2, Vec3::new(1.0, 4.0, 4.0));
-    return ambient_light.compute()
-        + point_light.compute(point, normal)
-        + directional_light.compute(normal);
+fn compute_light(lights: &Vec<Box<dyn Light>>, light_compute_info: &LightComputeInfo) -> f64 {
+    let mut result: f64 = 0.0;
+    for light in lights.iter() {
+        result += light.compute(light_compute_info);
+    }
+    return result;
 }

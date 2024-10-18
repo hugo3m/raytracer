@@ -1,18 +1,37 @@
-use crate::math::vec::Vec3;
+use crate::{material::Material, math::vec::Vec3};
 
-pub struct LightComputeInfo {
-    pub point: Vec3,
-    pub normal: Vec3,
+use super::sphere::{find_intersection, Sphere};
+
+fn computer_specular(
+    intensity: f64,
+    direction: &Vec3,
+    info: &LightComputeInfo,
+    material: &Material,
+) -> f64 {
+    // specular use as exponent
+    if material.specular < 0.0 {
+        return 0.0;
+    }
+    // maximum reflection from the light into the surface
+    let reflection = info.normal * 2.0 * info.normal.dot(*direction) - *direction;
+    // calculate the coefficient of intensity sent back according to the viewer position
+    let coeff = reflection.dot(-info.direction) / (reflection.norm() * info.direction.norm());
+    // if coeff is negative no light is sent back to the viewer from is point of view
+    if coeff < 0.0 {
+        return 0.0;
+    }
+    // adjust the cosinus by exponenting it
+    return intensity * coeff.powf(material.specular);
 }
 
-impl LightComputeInfo {
-    pub fn new(point: Vec3, normal: Vec3) -> Self {
-        LightComputeInfo { point, normal }
-    }
+pub struct LightComputeInfo {
+    pub direction: Vec3,
+    pub normal: Vec3,
+    pub position: Vec3,
 }
 
 pub trait Light {
-    fn compute(&self, info: &LightComputeInfo) -> f64;
+    fn compute(&self, info: &LightComputeInfo, material: &Material, spheres: &Vec<Sphere>) -> f64;
 }
 
 pub struct LightAmbient {
@@ -26,7 +45,13 @@ impl LightAmbient {
 }
 
 impl Light for LightAmbient {
-    fn compute(&self, _info: &LightComputeInfo) -> f64 {
+    fn compute(
+        &self,
+        _info: &LightComputeInfo,
+        _material: &Material,
+        _spheres: &Vec<Sphere>,
+    ) -> f64 {
+        // ambient light is ambient from wherever
         return self.intensity;
     }
 }
@@ -43,13 +68,33 @@ impl LightPoint {
             position,
         }
     }
+
+    fn compute_diffuse(&self, info: &LightComputeInfo, direction: &Vec3) -> f64 {
+        // coefficient of light caught according to the angle with the light
+        let coeff = direction.dot(info.normal) / (info.normal.norm() * direction.norm());
+        return self.intensity * coeff;
+    }
+
+    fn compute_specular(
+        &self,
+        info: &LightComputeInfo,
+        direction: &Vec3,
+        material: &Material,
+    ) -> f64 {
+        return computer_specular(self.intensity, direction, info, material);
+    }
 }
 
 impl Light for LightPoint {
-    fn compute(&self, info: &LightComputeInfo) -> f64 {
-        let direction = self.position - info.point;
-        return self.intensity
-            * (direction.dot(info.normal) / (info.normal.norm() * direction.norm()));
+    fn compute(&self, info: &LightComputeInfo, material: &Material, spheres: &Vec<Sphere>) -> f64 {
+        // light direction
+        let direction = self.position - info.position;
+        let opt_intersection = find_intersection(info.position, direction, spheres, 0.001, 1000.0);
+        if opt_intersection.is_some() {
+            return 0.0;
+        }
+        return self.compute_diffuse(info, &direction)
+            + self.compute_specular(info, &direction, material);
     }
 }
 
@@ -65,11 +110,25 @@ impl LightDirectional {
             direction,
         }
     }
+
+    fn compute_diffuse(&self, info: &LightComputeInfo) -> f64 {
+        // coefficient of light caught according to the angle with the light
+        let coeff = self.direction.dot(info.normal) / (info.normal.norm() * self.direction.norm());
+        return self.intensity * coeff;
+    }
+
+    fn compute_specular(&self, info: &LightComputeInfo, material: &Material) -> f64 {
+        return computer_specular(self.intensity, &self.direction, info, material);
+    }
 }
 
 impl Light for LightDirectional {
-    fn compute(&self, info: &LightComputeInfo) -> f64 {
-        return self.intensity
-            * (self.direction.dot(info.normal) / (info.normal.norm() * self.direction.norm()));
+    fn compute(&self, info: &LightComputeInfo, material: &Material, spheres: &Vec<Sphere>) -> f64 {
+        let opt_intersection =
+            find_intersection(info.position, self.direction, spheres, 0.001, 1000.0);
+        if opt_intersection.is_some() {
+            return 0.0;
+        }
+        return self.compute_diffuse(info) + self.compute_specular(info, material);
     }
 }

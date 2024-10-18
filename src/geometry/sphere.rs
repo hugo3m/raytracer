@@ -1,21 +1,27 @@
+use crate::material::Material;
 use crate::math::vec::Vec3;
-use crate::render::RGBA;
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f64,
-    pub color: RGBA,
+    pub material: Material,
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f64, color: RGBA) -> Self {
+    pub fn new(center: Vec3, radius: f64, material: Material) -> Self {
         Sphere {
             center,
-            color,
+            material,
             radius,
         }
     }
 
-    pub fn intersect(&self, origin: Vec3, direction: Vec3) -> Option<Vec3> {
+    pub fn intersect(
+        &self,
+        origin: Vec3,
+        direction: Vec3,
+        distance_min: f64,
+        distance_max: f64,
+    ) -> Option<Vec3> {
         let co: Vec3 = origin - self.center;
         let a: f64 = direction.dot(direction);
         let b: f64 = 2.0 * direction.dot(co);
@@ -31,10 +37,16 @@ impl Sphere {
         if discriminant > 0.0 {
             let t1 = (-b - discriminant.sqrt()) / (2.0 * a);
             let t2 = (-b + discriminant.sqrt()) / (2.0 * a);
-            if t1 > 0.0 && (t1 < t2 || t2 < 0.0) {
+            if t1 > distance_min
+                && t1 < distance_max
+                && (t1 < t2 || t2 < distance_min || t2 > distance_max)
+            {
                 t = t1
             }
-            if t2 > 0.0 && (t2 < t1 || t1 < 0.0) {
+            if t2 > distance_min
+                && t2 < distance_max
+                && (t2 < t1 || t1 < distance_min || t1 > distance_max)
+            {
                 t = t2
             }
         }
@@ -47,4 +59,27 @@ impl Sphere {
     pub fn normal(&self, intersection: Vec3) -> Vec3 {
         return intersection - self.center;
     }
+}
+
+pub fn find_intersection(
+    origin: Vec3,
+    direction: Vec3,
+    spheres: &Vec<Sphere>,
+    distance_min: f64,
+    distance_max: f64,
+) -> Option<(Vec3, &Sphere)> {
+    let mut opt_result: Option<(Vec3, &Sphere)> = None;
+    let mut opt_closest_distance: Option<f64> = None;
+    for sphere in spheres.iter() {
+        let opt_current_intersection =
+            sphere.intersect(origin, direction, distance_min, distance_max);
+        if let Some(intersection) = opt_current_intersection {
+            let distance = (intersection - origin).norm();
+            if opt_closest_distance.is_none() || distance < opt_closest_distance.unwrap() {
+                opt_closest_distance = Some(distance);
+                opt_result = Some((intersection, sphere));
+            }
+        }
+    }
+    return opt_result;
 }

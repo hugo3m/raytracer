@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use std::ops;
 
 use crate::math::vec::Vec3;

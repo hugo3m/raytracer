@@ -1,13 +1,15 @@
 extern crate console_error_panic_hook;
 
 pub mod geometry;
+pub mod material;
 pub mod math;
 pub mod render;
 
 use geometry::{
     light::{Light, LightAmbient, LightComputeInfo, LightDirectional, LightPoint},
-    sphere::Sphere,
+    sphere::{find_intersection, Sphere},
 };
+use material::Material;
 use math::vec::Vec3;
 use render::RGBA;
 use wasm_bindgen::prelude::*;
@@ -26,18 +28,31 @@ pub fn draw(width: usize, height: usize) -> Vec<u8> {
     let cam = Vec3::new(0.0, 0.0, 0.0);
 
     let spheres: Vec<Sphere> = vec![
-        Sphere::new(Vec3::new(0.0, -1.0, 3.0), 1.0, RGBA::new(255, 0, 200, 255)),
+        Sphere::new(
+            Vec3::new(0.0, -1.0, 3.0),
+            1.0,
+            Material::new(RGBA::new(255, 0, 200, 255), 500.0),
+        ),
         Sphere::new(
             Vec3::new(0.0, -5001.0, 0.0),
             5000.0,
-            RGBA::new(255, 255, 0, 255),
+            Material::new(RGBA::new(255, 255, 0, 255), 1000.0),
         ),
-        Sphere::new(Vec3::new(-10.0, 5.0, 50.0), 1.0, RGBA::new(0, 255, 0, 255)),
+        Sphere::new(
+            Vec3::new(-2.0, 0.0, 4.0),
+            1.0,
+            Material::new(RGBA::new(0, 255, 0, 255), 10.0),
+        ),
+        Sphere::new(
+            Vec3::new(2.0, 0.0, 4.0),
+            1.0,
+            Material::new(RGBA::new(0, 0, 255, 255), 500.0),
+        ),
     ];
 
     let lights: Vec<Box<dyn Light>> = vec![
         Box::new(LightAmbient::new(0.2)),
-        Box::new(LightPoint::new(0.6, Vec3::new(-2.0, 1.0, 0.0))),
+        Box::new(LightPoint::new(0.6, Vec3::new(2.0, 1.0, 0.0))),
         Box::new(LightDirectional::new(0.2, Vec3::new(1.0, 4.0, 4.0))),
     ];
 
@@ -45,12 +60,16 @@ pub fn draw(width: usize, height: usize) -> Vec<u8> {
         for y in -canv.h_max + 1..canv.h_max {
             let viewport = canv.pixel_to_viewport(x, y);
             let direction = viewport - cam;
-            let opt_intersection = find_intersection(cam, direction, &spheres);
+            let opt_intersection = find_intersection(cam, direction, &spheres, 1.0, 1000.0);
             if opt_intersection.is_some() {
                 let (intersection, sphere) = opt_intersection.unwrap();
                 let normal = sphere.normal(intersection);
-                let light_compute_info = LightComputeInfo::new(intersection, normal);
-                let color = sphere.color * compute_light(&lights, &light_compute_info);
+                let light_compute_info = LightComputeInfo {
+                    position: intersection,
+                    direction: direction,
+                    normal: normal,
+                };
+                let color = compute_light(&lights, &light_compute_info, &sphere, &spheres);
                 canv.set_pixel_from_rgba(x, y, &color);
             } else {
                 canv.set_pixel(x, y, 255, 255, 255, 255);
@@ -61,30 +80,19 @@ pub fn draw(width: usize, height: usize) -> Vec<u8> {
     return canv.render();
 }
 
-fn find_intersection(
-    origin: Vec3,
-    direction: Vec3,
+fn compute_light(
+    lights: &Vec<Box<dyn Light>>,
+    light_compute_info: &LightComputeInfo,
+    sphere: &Sphere,
     spheres: &Vec<Sphere>,
-) -> Option<(Vec3, &Sphere)> {
-    let mut opt_result: Option<(Vec3, &Sphere)> = None;
-    let mut opt_closest_distance: Option<f64> = None;
-    for sphere in spheres.iter() {
-        let opt_current_intersection = sphere.intersect(origin, direction);
-        if let Some(intersection) = opt_current_intersection {
-            let distance = (intersection - origin).norm();
-            if opt_closest_distance.is_none() || distance < opt_closest_distance.unwrap() {
-                opt_closest_distance = Some(distance);
-                opt_result = Some((intersection, sphere));
-            }
-        }
-    }
-    return opt_result;
-}
-
-fn compute_light(lights: &Vec<Box<dyn Light>>, light_compute_info: &LightComputeInfo) -> f64 {
-    let mut result: f64 = 0.0;
+) -> RGBA {
+    let mut lighting: f64 = 0.0;
     for light in lights.iter() {
-        result += light.compute(light_compute_info);
+        lighting += light.compute(light_compute_info, &sphere.material, spheres);
     }
-    return result;
+    return if lighting > 0.0 {
+        sphere.material.color * lighting
+    } else {
+        sphere.material.color * 0.0
+    };
 }

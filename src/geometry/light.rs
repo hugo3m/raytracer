@@ -1,4 +1,4 @@
-use crate::{material::Material, math::vec::Vec3};
+use crate::{material::Material, math::vec::reflection, math::vec::Vec3};
 
 use super::sphere::{find_intersection, Sphere};
 
@@ -13,9 +13,9 @@ fn computer_specular(
         return 0.0;
     }
     // maximum reflection from the light into the surface
-    let reflection = info.normal * 2.0 * info.normal.dot(*direction) - *direction;
+    let reflected = reflection(&direction, &info.normal);
     // calculate the coefficient of intensity sent back according to the viewer position
-    let coeff = reflection.dot(-info.direction) / (reflection.norm() * info.direction.norm());
+    let coeff = reflected.dot(info.direction) / (reflected.norm() * info.direction.norm());
     // if coeff is negative no light is sent back to the viewer from is point of view
     if coeff < 0.0 {
         return 0.0;
@@ -89,8 +89,9 @@ impl Light for LightPoint {
     fn compute(&self, info: &LightComputeInfo, material: &Material, spheres: &Vec<Sphere>) -> f64 {
         // light direction
         let direction = self.position - info.position;
-        let opt_intersection = find_intersection(info.position, direction, spheres, 0.001, 1000.0);
-        if opt_intersection.is_some() {
+        let opt_shadow_intersection =
+            find_intersection(info.position, direction, spheres, 0.001, 1000.0);
+        if opt_shadow_intersection.is_some() {
             return 0.0;
         }
         return self.compute_diffuse(info, &direction)
@@ -124,9 +125,11 @@ impl LightDirectional {
 
 impl Light for LightDirectional {
     fn compute(&self, info: &LightComputeInfo, material: &Material, spheres: &Vec<Sphere>) -> f64 {
-        let opt_intersection =
+        // try to find object between the hit and the light
+        let opt_shadow_intersection =
             find_intersection(info.position, self.direction, spheres, 0.001, 1000.0);
-        if opt_intersection.is_some() {
+        // if so return dark
+        if opt_shadow_intersection.is_some() {
             return 0.0;
         }
         return self.compute_diffuse(info) + self.compute_specular(info, material);

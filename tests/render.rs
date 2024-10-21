@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
-
-    use wasm::render::Canvas;
+    use wasm::render::{Canvas, RGBA};
 
     const WIDTH: usize = 400;
     const HEIGHT: usize = 600;
@@ -22,5 +20,16 @@ mod tests {
             canv.get_pixel_flat_index(0, 0),
             (WIDTH * HEIGHT / 2) + WIDTH / 2
         );
+    }
+
+    #[test]
+    fn test_rgba_add() {
+        let rgba_1 = RGBA::new(0, 10, 120, 255);
+        let rgba_2 = RGBA::new(120, 60, 120, 253);
+        let rgba_3 = rgba_1 + rgba_2;
+        assert_eq!(rgba_3.r, 120);
+        assert_eq!(rgba_3.g, 70);
+        assert_eq!(rgba_3.b, 240);
+        assert_eq!(rgba_3.a, 255);
     }
 }

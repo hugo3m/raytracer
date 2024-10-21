@@ -56,6 +56,19 @@ impl ops::Mul<f64> for RGBA {
     }
 }
 
+impl ops::Add<Self> for RGBA {
+    type Output = Self;
+
+    fn add(self, _rhs: RGBA) -> Self {
+        return Self::new(
+            self.r.saturating_add(_rhs.r),
+            self.g.saturating_add(_rhs.g),
+            self.b.saturating_add(_rhs.b),
+            self.a.saturating_add(_rhs.a),
+        );
+    }
+}
+
 /// A 2D Canvas
 #[derive(Debug, Clone)]
 pub struct Canvas {

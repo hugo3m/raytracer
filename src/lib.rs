@@ -10,7 +10,7 @@ use geometry::{
     sphere::{find_intersection, Sphere},
 };
 use material::Material;
-use math::vec::Vec3;
+use math::vec::{reflection, Vec3};
 use render::RGBA;
 use wasm_bindgen::prelude::*;
 
@@ -31,22 +31,22 @@ pub fn draw(width: usize, height: usize) -> Vec<u8> {
         Sphere::new(
             Vec3::new(0.0, -1.0, 3.0),
             1.0,
-            Material::new(RGBA::new(255, 0, 200, 255), 500.0),
+            Material::new(RGBA::new(255, 0, 200, 255), 500.0, 0.2),
         ),
         Sphere::new(
             Vec3::new(0.0, -5001.0, 0.0),
             5000.0,
-            Material::new(RGBA::new(255, 255, 0, 255), 1000.0),
+            Material::new(RGBA::new(255, 255, 0, 255), 1000.0, 0.5),
         ),
         Sphere::new(
             Vec3::new(-2.0, 0.0, 4.0),
             1.0,
-            Material::new(RGBA::new(0, 255, 0, 255), 10.0),
+            Material::new(RGBA::new(0, 255, 0, 255), 10.0, 0.4),
         ),
         Sphere::new(
             Vec3::new(2.0, 0.0, 4.0),
             1.0,
-            Material::new(RGBA::new(0, 0, 255, 255), 500.0),
+            Material::new(RGBA::new(0, 0, 255, 255), 500.0, 0.3),
         ),
     ];
 
@@ -60,24 +60,46 @@ pub fn draw(width: usize, height: usize) -> Vec<u8> {
         for y in -canv.h_max + 1..canv.h_max {
             let viewport = canv.pixel_to_viewport(x, y);
             let direction = viewport - cam;
-            let opt_intersection = find_intersection(cam, direction, &spheres, 1.0, 1000.0);
-            if opt_intersection.is_some() {
-                let (intersection, sphere) = opt_intersection.unwrap();
-                let normal = sphere.normal(intersection);
-                let light_compute_info = LightComputeInfo {
-                    position: intersection,
-                    direction: direction,
-                    normal: normal,
-                };
-                let color = compute_light(&lights, &light_compute_info, &sphere, &spheres);
-                canv.set_pixel_from_rgba(x, y, &color);
-            } else {
-                canv.set_pixel(x, y, 255, 255, 255, 255);
-            }
+            canv.set_pixel_from_rgba(x, y, &get_pixel_color(cam, direction, &spheres, &lights, 1));
         }
     }
 
     return canv.render();
+}
+
+fn get_pixel_color(
+    origin: Vec3,
+    direction: Vec3,
+    spheres: &Vec<Sphere>,
+    lights: &Vec<Box<dyn Light>>,
+    recursion_depth: u8,
+) -> RGBA {
+    let opt_intersection = find_intersection(origin, direction, &spheres, 1.0, 1000.0);
+    if opt_intersection.is_some() {
+        let (intersection, sphere) = opt_intersection.unwrap();
+        let normal = sphere.normal(intersection);
+        let light_compute_info = LightComputeInfo {
+            position: intersection,
+            direction: direction,
+            normal: normal,
+        };
+        let recursion_color = compute_light(&lights, &light_compute_info, &sphere, &spheres);
+        if sphere.material.reflective <= 0.0 || recursion_depth <= 0 {
+            return recursion_color;
+        }
+        let reflected = reflection(&direction, &normal);
+        let reflected_color = get_pixel_color(
+            intersection,
+            reflected,
+            spheres,
+            lights,
+            recursion_depth - 1,
+        );
+        return recursion_color * (1.0 - sphere.material.reflective)
+            + reflected_color * sphere.material.reflective;
+    } else {
+        return RGBA::new(85, 200, 253, 255);
+    }
 }
 
 fn compute_light(

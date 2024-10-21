@@ -1,5 +1,9 @@
 use std::ops;
 
+pub fn reflection(direction: &Vec3, normal: &Vec3) -> Vec3 {
+    return *direction - *normal * 2.0 * normal.dot(*direction);
+}
+
 struct Vec2 {
     x: f64,
     y: f64,

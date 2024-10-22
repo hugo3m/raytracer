@@ -1,6 +1,6 @@
-import Test from "../components/test";
+import Main from "../components/main";
 
 export default function Home() {
 
-  return <Test/>
+  return <Main/>
 }

@@ -1,10 +1,8 @@
 import { useEffect, useRef } from "react"
 
-
 type Props = {
     width: number,
     height: number,
-
 }
 
 export default function Canvas({width, height}: Props){
@@ -26,3 +24,5 @@ export default function Canvas({width, height}: Props){
 
     return <canvas ref={canvasRef} width={width} height={height}></canvas>
 }
+
+export {type Props};

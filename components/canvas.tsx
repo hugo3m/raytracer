@@ -1,8 +1,5 @@
 import { useEffect, useRef } from "react"
 
-import { RGBA } from "wasm";
-import { time } from "console";
-import { unpack } from "@/utils/geometry";
 
 type Props = {
     width: number,

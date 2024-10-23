@@ -110,9 +110,10 @@ impl Canvas {
         self.set_pixel(x, y, rgba.r, rgba.g, rgba.b, rgba.a)
     }
 
-    pub fn render(self) -> Vec<u8> {
+    pub fn render(&self) -> Vec<u8> {
         let map: Vec<[u8; 4]> = self
             .pixels
+            .clone()
             .into_iter()
             .map(|rgba: RGBA| rgba.unpack())
             .collect();

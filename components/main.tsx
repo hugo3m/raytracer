@@ -1,9 +1,6 @@
 "use client";
 
-import Canvas, {Props as CanvasProps} from "./canvas";
-import { useEffect, useState } from "react";
-
-import { Nullable } from "@/utils/type";
+import Canvas from "./canvas";
 
 export default function Test() {
 

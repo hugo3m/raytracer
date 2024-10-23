@@ -21,50 +21,67 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn draw(width: usize, height: usize) -> Vec<u8> {
-    console_error_panic_hook::set_once();
+struct Raytracer {
+    canv: render::Canvas,
+    camera: Vec3,
+}
 
-    let mut canv = render::Canvas::new(width, height);
-    let cam = Vec3::new(0.0, 0.0, 0.0);
-
-    let spheres: Vec<Sphere> = vec![
-        Sphere::new(
-            Vec3::new(0.0, -1.0, 3.0),
-            1.0,
-            Material::new(RGBA::new(255, 0, 200, 255), 500.0, 0.2),
-        ),
-        Sphere::new(
-            Vec3::new(0.0, -5001.0, 0.0),
-            5000.0,
-            Material::new(RGBA::new(255, 255, 0, 255), 1000.0, 0.5),
-        ),
-        Sphere::new(
-            Vec3::new(-2.0, 0.0, 4.0),
-            1.0,
-            Material::new(RGBA::new(0, 255, 0, 255), 10.0, 0.4),
-        ),
-        Sphere::new(
-            Vec3::new(2.0, 0.0, 4.0),
-            1.0,
-            Material::new(RGBA::new(0, 0, 255, 255), 500.0, 0.3),
-        ),
-    ];
-
-    let lights: Vec<Box<dyn Light>> = vec![
-        Box::new(LightAmbient::new(0.2)),
-        Box::new(LightPoint::new(0.6, Vec3::new(2.0, 1.0, 0.0))),
-        Box::new(LightDirectional::new(0.2, Vec3::new(1.0, 4.0, 4.0))),
-    ];
-
-    for x in -canv.w_max..canv.w_max {
-        for y in -canv.h_max + 1..canv.h_max {
-            let viewport = canv.pixel_to_viewport(x, y);
-            let direction = viewport - cam;
-            canv.set_pixel_from_rgba(x, y, &get_pixel_color(cam, direction, &spheres, &lights, 1));
+#[wasm_bindgen]
+impl Raytracer {
+    #[wasm_bindgen(constructor)]
+    pub fn new(width: usize, height: usize) -> Raytracer {
+        Raytracer {
+            canv: render::Canvas::new(width, height),
+            camera: Vec3::new(0.0, 0.0, 0.0),
         }
     }
 
-    return canv.render();
+    pub fn draw(&mut self) -> Vec<u8> {
+        console_error_panic_hook::set_once();
+
+        let spheres: Vec<Sphere> = vec![
+            Sphere::new(
+                Vec3::new(0.0, -1.0, 3.0),
+                1.0,
+                Material::new(RGBA::new(255, 0, 200, 255), 500.0, 0.2),
+            ),
+            Sphere::new(
+                Vec3::new(0.0, -5001.0, 0.0),
+                5000.0,
+                Material::new(RGBA::new(255, 255, 0, 255), 1000.0, 0.5),
+            ),
+            Sphere::new(
+                Vec3::new(-2.0, 0.0, 4.0),
+                1.0,
+                Material::new(RGBA::new(0, 255, 0, 255), 10.0, 0.4),
+            ),
+            Sphere::new(
+                Vec3::new(2.0, 0.0, 4.0),
+                1.0,
+                Material::new(RGBA::new(0, 0, 255, 255), 500.0, 0.3),
+            ),
+        ];
+
+        let lights: Vec<Box<dyn Light>> = vec![
+            Box::new(LightAmbient::new(0.2)),
+            Box::new(LightPoint::new(0.6, Vec3::new(2.0, 1.0, 0.0))),
+            Box::new(LightDirectional::new(0.2, Vec3::new(1.0, 4.0, 4.0))),
+        ];
+
+        for x in -self.canv.w_max..self.canv.w_max {
+            for y in -self.canv.h_max + 1..self.canv.h_max {
+                let viewport = self.canv.pixel_to_viewport(x, y);
+                let direction = viewport - self.camera;
+                self.canv.set_pixel_from_rgba(
+                    x,
+                    y,
+                    &get_pixel_color(self.camera, direction, &spheres, &lights, 1),
+                );
+            }
+        }
+
+        return self.canv.render();
+    }
 }
 
 fn get_pixel_color(

@@ -36,6 +36,21 @@ impl Raytracer {
         }
     }
 
+    pub fn input(
+        &mut self,
+        forward: bool,
+        backward: bool,
+        left: bool,
+        right: bool,
+        up: bool,
+        down: bool,
+    ) {
+        let x: f64 = f64::from(left as u8) * -1.0 + f64::from(right as u8) * 1.0;
+        let y: f64 = f64::from(down as u8) * -1.0 + f64::from(up as u8) * 1.0;
+        let z: f64 = f64::from(backward as u8) * -1.0 + f64::from(forward as u8) * 1.0;
+        self.camera = self.camera + Vec3::new(x * 0.1, y * 0.1, z * 0.1);
+    }
+
     pub fn draw(&mut self) -> Vec<u8> {
         console_error_panic_hook::set_once();
 

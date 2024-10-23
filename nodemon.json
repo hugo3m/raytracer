@@ -3,7 +3,8 @@
     "watch": [
         "src/",
         "app/",
-        "components/"
+        "components/",
+        "utils/"
     ],
     "ext": "ts, rs, tsx"
 }

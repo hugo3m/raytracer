@@ -27,7 +27,7 @@ class InputInfo{
 }
 
 class Engine {
-    static #instance: Engine;
+    static _instance: Engine;
 
     canvas: HTMLCanvasElement;
     height: number;
@@ -57,13 +57,13 @@ class Engine {
     }
 
     public static create(raytracer: Raytracer, canvas: HTMLCanvasElement, width: number, height: number, setFps: Dispatch<SetStateAction<number>>) {
-        if (!Engine.#instance) {
-            Engine.#instance = new Engine(raytracer, canvas, width, height, setFps);
+        if (!Engine._instance) {
+            Engine._instance = new Engine(raytracer, canvas, width, height, setFps);
         }
     }
 
     public static get instance(): Engine {
-        return Engine.#instance;
+        return Engine._instance;
     }
 
     private update() {

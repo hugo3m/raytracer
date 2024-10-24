@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react"
+import Engine from "@/utils/engine";
+import { useEffect, useRef, useState } from "react"
 
 type Props = {
     width: number,
@@ -9,20 +10,23 @@ export default function Canvas({width, height}: Props){
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
+    const [fps, setFps] = useState<number>(0);
+
     useEffect(() => {
         const run = async () => {
-            if (!canvasRef.current) return;
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext("2d")
-            if (!ctx) return;
             const WASM = await import("wasm");
-            const wasmData: Uint8Array = WASM.draw(width, height);
-            ctx.putImageData(new ImageData(new Uint8ClampedArray(wasmData), width, height), 0, 0);
+            const raytracer = new WASM.Raytracer(width, height);
+            if (canvasRef.current){
+                Engine.create(raytracer, canvasRef.current, width, height, setFps);
+            }
         };
         run();
-    });
+    }, []);
 
-    return <canvas ref={canvasRef} width={width} height={height}></canvas>
+    return <div>
+        <span>{fps.toFixed(0)}FPS</span>
+        <canvas ref={canvasRef} width={width} height={height}/>
+        </div>
 }
 
 export {type Props};

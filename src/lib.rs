@@ -21,50 +21,89 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn draw(width: usize, height: usize) -> Vec<u8> {
-    console_error_panic_hook::set_once();
+struct Raytracer {
+    canv: render::Canvas,
+    camera: Vec3,
+}
 
-    let mut canv = render::Canvas::new(width, height);
-    let cam = Vec3::new(0.0, 0.0, 0.0);
-
-    let spheres: Vec<Sphere> = vec![
-        Sphere::new(
-            Vec3::new(0.0, -1.0, 3.0),
-            1.0,
-            Material::new(RGBA::new(255, 0, 200, 255), 500.0, 0.2),
-        ),
-        Sphere::new(
-            Vec3::new(0.0, -5001.0, 0.0),
-            5000.0,
-            Material::new(RGBA::new(255, 255, 0, 255), 1000.0, 0.5),
-        ),
-        Sphere::new(
-            Vec3::new(-2.0, 0.0, 4.0),
-            1.0,
-            Material::new(RGBA::new(0, 255, 0, 255), 10.0, 0.4),
-        ),
-        Sphere::new(
-            Vec3::new(2.0, 0.0, 4.0),
-            1.0,
-            Material::new(RGBA::new(0, 0, 255, 255), 500.0, 0.3),
-        ),
-    ];
-
-    let lights: Vec<Box<dyn Light>> = vec![
-        Box::new(LightAmbient::new(0.2)),
-        Box::new(LightPoint::new(0.6, Vec3::new(2.0, 1.0, 0.0))),
-        Box::new(LightDirectional::new(0.2, Vec3::new(1.0, 4.0, 4.0))),
-    ];
-
-    for x in -canv.w_max..canv.w_max {
-        for y in -canv.h_max + 1..canv.h_max {
-            let viewport = canv.pixel_to_viewport(x, y);
-            let direction = viewport - cam;
-            canv.set_pixel_from_rgba(x, y, &get_pixel_color(cam, direction, &spheres, &lights, 1));
+#[wasm_bindgen]
+impl Raytracer {
+    #[wasm_bindgen(constructor)]
+    pub fn new(width: usize, height: usize) -> Raytracer {
+        Raytracer {
+            canv: render::Canvas::new(width, height),
+            camera: Vec3::new(0.0, 0.0, 0.0),
         }
     }
 
-    return canv.render();
+    pub fn input(
+        &mut self,
+        forward: bool,
+        backward: bool,
+        left: bool,
+        right: bool,
+        up: bool,
+        down: bool,
+    ) {
+        let x: f64 = self.map_bool_to_f64(left) * -1.0 + self.map_bool_to_f64(right) * 1.0;
+        let y: f64 = self.map_bool_to_f64(down) * -1.0 + self.map_bool_to_f64(up) * 1.0;
+        let z: f64 = self.map_bool_to_f64(backward) * -1.0 + self.map_bool_to_f64(forward) * 1.0;
+        self.camera = self.camera + Vec3::new(x * 0.1, y * 0.1, z * 0.1);
+    }
+
+    fn map_bool_to_f64(&self, boolean: bool) -> f64 {
+        if boolean {
+            return 1.0;
+        }
+        return 0.0;
+    }
+
+    pub fn draw(&mut self) -> Vec<u8> {
+        console_error_panic_hook::set_once();
+
+        let spheres: Vec<Sphere> = vec![
+            Sphere::new(
+                Vec3::new(0.0, -1.0, 3.0),
+                1.0,
+                Material::new(RGBA::new(255, 0, 200, 255), 500.0, 0.2),
+            ),
+            Sphere::new(
+                Vec3::new(0.0, -5001.0, 0.0),
+                5000.0,
+                Material::new(RGBA::new(255, 255, 0, 255), 1000.0, 0.5),
+            ),
+            Sphere::new(
+                Vec3::new(-2.0, 0.0, 4.0),
+                1.0,
+                Material::new(RGBA::new(0, 255, 0, 255), 10.0, 0.4),
+            ),
+            Sphere::new(
+                Vec3::new(2.0, 0.0, 4.0),
+                1.0,
+                Material::new(RGBA::new(0, 0, 255, 255), 500.0, 0.3),
+            ),
+        ];
+
+        let lights: Vec<Box<dyn Light>> = vec![
+            Box::new(LightAmbient::new(0.2)),
+            Box::new(LightPoint::new(0.6, Vec3::new(2.0, 1.0, 0.0))),
+            Box::new(LightDirectional::new(0.2, Vec3::new(1.0, 4.0, 4.0))),
+        ];
+
+        for x in -self.canv.w_max..self.canv.w_max {
+            for y in -self.canv.h_max + 1..self.canv.h_max {
+                let viewport = self.canv.pixel_to_viewport(x, y);
+                let direction = viewport - self.camera;
+                self.canv.set_pixel_from_rgba(
+                    x,
+                    y,
+                    &get_pixel_color(self.camera, direction, &spheres, &lights, 1),
+                );
+            }
+        }
+
+        return self.canv.render();
+    }
 }
 
 fn get_pixel_color(

@@ -1,3 +1,5 @@
+import { Dispatch, SetStateAction } from "react";
+
 import { Raytracer } from "@/pkg/wasm";
 
 enum Event {
@@ -32,15 +34,17 @@ class Engine {
     inputInfo: InputInfo;
     raytracer: Raytracer;
     refreshRate: number;
+    setFps: Dispatch<SetStateAction<number>>
     width: number
 
-    private constructor(raytracer: Raytracer, canvas: HTMLCanvasElement, width: number, height: number) {
+    private constructor(raytracer: Raytracer, canvas: HTMLCanvasElement, width: number, height: number, setFps: Dispatch<SetStateAction<number>>) {
         this.raytracer = raytracer;
         this.canvas = canvas;
         this.width = width;
         this.height = height;
         this.inputInfo = new InputInfo();
         this.refreshRate = 60;
+        this.setFps = setFps;
         this.update();
 
         addEventListener("keydown", (event) => {
@@ -52,9 +56,9 @@ class Engine {
         });
     }
 
-    public static create(raytracer: Raytracer, canvas: HTMLCanvasElement, width: number, height: number) {
+    public static create(raytracer: Raytracer, canvas: HTMLCanvasElement, width: number, height: number, setFps: Dispatch<SetStateAction<number>>) {
         if (!Engine.#instance) {
-            Engine.#instance = new Engine(raytracer, canvas, width, height);
+            Engine.#instance = new Engine(raytracer, canvas, width, height, setFps);
         }
     }
 
@@ -73,17 +77,18 @@ class Engine {
             this.inputInfo.up,
             this.inputInfo.down);
         ctx.putImageData(new ImageData(new Uint8ClampedArray(this.raytracer.draw()), this.width, this.height), 0, 0);
-        const elapsedTime: number = Date.now() - startTime;
-        const minTime = 1 / this.refreshRate;
-        const timeToWait = elapsedTime - minTime;
-        setTimeout(this.update.bind(this), timeToWait > 0 ? timeToWait : 0);
+        const elapsedTimeMs: number = Date.now() - startTime;
+        const minTimeMs = (1 / this.refreshRate) * 1000;
+        const timeToWait = minTimeMs > elapsedTimeMs ? minTimeMs - elapsedTimeMs : 0;
+        this.setFps(1 / ((elapsedTimeMs + timeToWait) / 1000));
+        setTimeout(this.update.bind(this), timeToWait);
     };
 
     private mapEventToBoolean(event: Event): boolean {
         switch(event){
-            case Event.Up:
-                return true;
             case Event.Down:
+                return true;
+            case Event.Up:
                 return false;
             default:
                 return false;
@@ -92,7 +97,6 @@ class Engine {
 
     private handleEvent(key: string, event: Event){
         const eventBoolean = this.mapEventToBoolean(event);
-        console.log(key, event);
         switch(key){
             case "w":
                 this.inputInfo.forward = eventBoolean;
@@ -111,6 +115,18 @@ class Engine {
                 break;
             case "e":
                 this.inputInfo.down = eventBoolean;
+                break;
+            case "ArrowUp":
+                this.inputInfo.forward = eventBoolean;
+                break
+            case "ArrowDown":
+                this.inputInfo.backward = eventBoolean;
+                break;
+            case "ArrowLeft":
+                this.inputInfo.left = eventBoolean;
+                break;
+            case "ArrowRight":
+                this.inputInfo.right = eventBoolean;
                 break;
             default:
                 break;

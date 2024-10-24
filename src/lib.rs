@@ -45,10 +45,17 @@ impl Raytracer {
         up: bool,
         down: bool,
     ) {
-        let x: f64 = f64::from(left as u8) * -1.0 + f64::from(right as u8) * 1.0;
-        let y: f64 = f64::from(down as u8) * -1.0 + f64::from(up as u8) * 1.0;
-        let z: f64 = f64::from(backward as u8) * -1.0 + f64::from(forward as u8) * 1.0;
+        let x: f64 = self.map_bool_to_f64(left) * -1.0 + self.map_bool_to_f64(right) * 1.0;
+        let y: f64 = self.map_bool_to_f64(down) * -1.0 + self.map_bool_to_f64(up) * 1.0;
+        let z: f64 = self.map_bool_to_f64(backward) * -1.0 + self.map_bool_to_f64(forward) * 1.0;
         self.camera = self.camera + Vec3::new(x * 0.1, y * 0.1, z * 0.1);
+    }
+
+    fn map_bool_to_f64(&self, boolean: bool) -> f64 {
+        if boolean {
+            return 1.0;
+        }
+        return 0.0;
     }
 
     pub fn draw(&mut self) -> Vec<u8> {

@@ -24,15 +24,17 @@ extern "C" {
 struct Raytracer {
     canv: render::Canvas,
     camera: Vec3,
+    sphere_number: usize,
 }
 
 #[wasm_bindgen]
 impl Raytracer {
     #[wasm_bindgen(constructor)]
-    pub fn new(width: usize, height: usize) -> Raytracer {
+    pub fn new(width: usize, height: usize, sphere_number: usize) -> Raytracer {
         Raytracer {
             canv: render::Canvas::new(width, height),
             camera: Vec3::new(0.0, 0.0, 0.0),
+            sphere_number: sphere_number,
         }
     }
 
@@ -44,11 +46,12 @@ impl Raytracer {
         right: bool,
         up: bool,
         down: bool,
+        delta_time: f64,
     ) {
         let x: f64 = self.map_bool_to_f64(left) * -1.0 + self.map_bool_to_f64(right) * 1.0;
         let y: f64 = self.map_bool_to_f64(down) * -1.0 + self.map_bool_to_f64(up) * 1.0;
         let z: f64 = self.map_bool_to_f64(backward) * -1.0 + self.map_bool_to_f64(forward) * 1.0;
-        self.camera = self.camera + Vec3::new(x * 0.1, y * 0.1, z * 0.1);
+        self.camera = self.camera + Vec3::new(x * delta_time, y * delta_time, z * delta_time);
     }
 
     fn map_bool_to_f64(&self, boolean: bool) -> f64 {
@@ -61,16 +64,17 @@ impl Raytracer {
     pub fn draw(&mut self) -> Vec<u8> {
         console_error_panic_hook::set_once();
 
-        let spheres: Vec<Sphere> = vec![
-            Sphere::new(
-                Vec3::new(0.0, -1.0, 3.0),
-                1.0,
-                Material::new(RGBA::new(255, 0, 200, 255), 500.0, 0.2),
-            ),
+        let mut init_spheres: Vec<Sphere> = vec![
+            // main sphere
             Sphere::new(
                 Vec3::new(0.0, -5001.0, 0.0),
                 5000.0,
                 Material::new(RGBA::new(255, 255, 0, 255), 1000.0, 0.5),
+            ),
+            Sphere::new(
+                Vec3::new(0.0, -1.0, 3.0),
+                1.0,
+                Material::new(RGBA::new(255, 0, 200, 255), 500.0, 0.2),
             ),
             Sphere::new(
                 Vec3::new(-2.0, 0.0, 4.0),
@@ -82,7 +86,39 @@ impl Raytracer {
                 1.0,
                 Material::new(RGBA::new(0, 0, 255, 255), 500.0, 0.3),
             ),
+            Sphere::new(
+                Vec3::new(0.0, 4.0, 10.0),
+                1.0,
+                Material::new(RGBA::new(120, 120, 255, 255), 500.0, 0.2),
+            ),
+            Sphere::new(
+                Vec3::new(-3.0, 5.0, 10.0),
+                1.0,
+                Material::new(RGBA::new(255, 0, 255, 255), 1000.0, 0.0),
+            ),
+            Sphere::new(
+                Vec3::new(2.0, 2.5, 15.0),
+                1.0,
+                Material::new(RGBA::new(0, 0, 255, 255), 500.0, 0.3),
+            ),
+            Sphere::new(
+                Vec3::new(-1.0, 3.0, 20.0),
+                1.0,
+                Material::new(RGBA::new(255, 0, 200, 255), 1500.0, 0.7),
+            ),
+            Sphere::new(
+                Vec3::new(-2.0, 1.0, 15.0),
+                1.0,
+                Material::new(RGBA::new(0, 255, 0, 255), 10.0, 0.4),
+            ),
+            Sphere::new(
+                Vec3::new(0.0, 2.0, -5.0),
+                1.0,
+                Material::new(RGBA::new(0, 120, 255, 255), 500.0, 0.3),
+            ),
         ];
+
+        init_spheres.truncate(self.sphere_number);
 
         let lights: Vec<Box<dyn Light>> = vec![
             Box::new(LightAmbient::new(0.2)),
@@ -97,7 +133,7 @@ impl Raytracer {
                 self.canv.set_pixel_from_rgba(
                     x,
                     y,
-                    &get_pixel_color(self.camera, direction, &spheres, &lights, 1),
+                    &get_pixel_color(self.camera, direction, &init_spheres, &lights, 1),
                 );
             }
         }

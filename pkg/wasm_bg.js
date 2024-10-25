@@ -146,9 +146,10 @@ export class Raytracer {
     /**
     * @param {number} width
     * @param {number} height
+    * @param {number} sphere_number
     */
-    constructor(width, height) {
-        const ret = wasm.raytracer_new(width, height);
+    constructor(width, height, sphere_number) {
+        const ret = wasm.raytracer_new(width, height, sphere_number);
         this.__wbg_ptr = ret >>> 0;
         RaytracerFinalization.register(this, this.__wbg_ptr, this);
         return this;
@@ -160,9 +161,10 @@ export class Raytracer {
     * @param {boolean} right
     * @param {boolean} up
     * @param {boolean} down
+    * @param {number} delta_time
     */
-    input(forward, backward, left, right, up, down) {
-        wasm.raytracer_input(this.__wbg_ptr, forward, backward, left, right, up, down);
+    input(forward, backward, left, right, up, down, delta_time) {
+        wasm.raytracer_input(this.__wbg_ptr, forward, backward, left, right, up, down, delta_time);
     }
     /**
     * @returns {Uint8Array}

@@ -28,27 +28,25 @@ impl Sphere {
         let b: f64 = 2.0 * direction.dot(co);
         let c: f64 = co.dot(co) - self.radius * self.radius;
         let discriminant = (b * b) - (4.0 * a * c);
+        let mut t = distance_max + 1.0;
         if discriminant == 0.0 {
             let t0 = -b / (2.0 * a);
-            if t0 > distance_min {
-                return Some(origin + direction * t0);
+            if t0 > distance_min && t0 < distance_max {
+                t = t0;
             }
         }
         if discriminant > 0.0 {
             let t1 = (-b - discriminant.sqrt()) / (2.0 * a);
             let t2 = (-b + discriminant.sqrt()) / (2.0 * a);
-            if t1 > distance_min
-                && t1 < distance_max
-                && (t1 < t2 || t2 < distance_min || t2 > distance_max)
-            {
-                return Some(origin + direction * t1);
+            if t1 > distance_min && t1 < distance_max && (t1 < t) {
+                t = t1;
             }
-            if t2 > distance_min
-                && t2 < distance_max
-                && (t2 < t1 || t1 < distance_min || t1 > distance_max)
-            {
-                return Some(origin + direction * t2);
+            if t2 > distance_min && t2 < distance_max && (t2 < t) {
+                t = t2;
             }
+        }
+        if t < distance_max {
+            return Some(origin + direction * t);
         }
         return None;
     }

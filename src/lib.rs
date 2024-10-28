@@ -30,6 +30,7 @@ struct Raytracer {
     is_specular: bool,
     is_shadow: bool,
     is_reflective: bool,
+    camera_speed: f64,
 }
 
 #[wasm_bindgen]
@@ -43,6 +44,7 @@ impl Raytracer {
         is_specular: bool,
         is_shadow: bool,
         is_reflective: bool,
+        camera_speed: f64,
     ) -> Raytracer {
         let mut spheres = vec![
             // main sphere
@@ -100,7 +102,7 @@ impl Raytracer {
         spheres.truncate(sphere_number);
         Raytracer {
             canv: render::Canvas::new(width, height),
-            camera: Vec3::new(0.0, 0.0, 0.0),
+            camera: Vec3::new(0.0, 0.0, 0.75),
             spheres,
             lights: vec![
                 Box::new(LightAmbient::new(0.2)),
@@ -111,6 +113,7 @@ impl Raytracer {
             is_reflective,
             is_shadow,
             is_specular,
+            camera_speed,
         }
     }
 
@@ -127,7 +130,8 @@ impl Raytracer {
         let x: f64 = self.map_bool_to_f64(left) * -1.0 + self.map_bool_to_f64(right) * 1.0;
         let y: f64 = self.map_bool_to_f64(down) * -1.0 + self.map_bool_to_f64(up) * 1.0;
         let z: f64 = self.map_bool_to_f64(backward) * -1.0 + self.map_bool_to_f64(forward) * 1.0;
-        self.camera = self.camera + Vec3::new(x * delta_time, y * delta_time, z * delta_time);
+        self.camera =
+            self.camera + (Vec3::new(x, y, z).normalize() * delta_time * self.camera_speed);
     }
 
     fn map_bool_to_f64(&self, boolean: bool) -> f64 {
@@ -142,8 +146,8 @@ impl Raytracer {
 
         for x in -self.canv.w_max..self.canv.w_max {
             for y in -self.canv.h_max + 1..self.canv.h_max {
-                let viewport = self.canv.pixel_to_viewport(x, y);
-                let direction = viewport - self.camera;
+                let viewport = self.canv.pixel_to_viewport(x, y) + self.camera;
+                let direction = (viewport - self.camera).normalize();
                 self.canv.set_pixel_from_rgba(
                     x,
                     y,

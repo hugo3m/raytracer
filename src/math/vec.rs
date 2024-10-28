@@ -31,7 +31,11 @@ impl Vec3 {
     }
 
     pub fn normalize(self) -> Vec3 {
-        return Vec3::new(self.x, self.y, self.z) / self.norm();
+        let norm = self.norm();
+        if norm > 0.0 {
+            return Vec3::new(self.x, self.y, self.z) / self.norm();
+        }
+        return Vec3::new(self.x, self.y, self.z);
     }
 }
 

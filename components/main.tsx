@@ -46,7 +46,7 @@ export default function Main() {
           <p>
               Homemade raytracer made by <a className="text-blue-700" href="https://github.com/hugo3m">hugo3m</a> inspired from
               <a className="text-blue-700" href="https://gabrielgambetta.com/computer-graphics-from-scratch/index.html"> Computer graphics from scratch, Gabriel Gambetta</a>.
-                Built using Rust web assembly and NextJS.
+                Built using Rust web assembly and NextJS. You can find the repository at <a className="text-blue-700" href="https://github.com/hugo3m/raytracer">hugo3m/raytracer</a>.
           </p>
       </div>
       <div className="flex flex-2 flex-col max-w-[30vw] min-w-[30vw]">

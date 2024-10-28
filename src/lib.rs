@@ -26,18 +26,30 @@ struct Raytracer {
     camera: Vec3,
     spheres: Vec<Sphere>,
     lights: Vec<Box<dyn Light>>,
+    is_diffuse: bool,
+    is_specular: bool,
+    is_shadow: bool,
+    is_reflective: bool,
 }
 
 #[wasm_bindgen]
 impl Raytracer {
     #[wasm_bindgen(constructor)]
-    pub fn new(width: usize, height: usize, sphere_number: usize) -> Raytracer {
+    pub fn new(
+        width: usize,
+        height: usize,
+        sphere_number: usize,
+        is_diffuse: bool,
+        is_specular: bool,
+        is_shadow: bool,
+        is_reflective: bool,
+    ) -> Raytracer {
         let mut spheres = vec![
             // main sphere
             Sphere::new(
                 Vec3::new(0.0, -5001.0, 0.0),
                 5000.0,
-                Material::new(RGBA::new(255, 255, 0, 255), 1000.0, 0.5),
+                Material::new(RGBA::new(255, 255, 0, 255), 1000.0, 0.1),
             ),
             Sphere::new(
                 Vec3::new(0.0, -1.0, 3.0),
@@ -95,6 +107,10 @@ impl Raytracer {
                 Box::new(LightPoint::new(0.6, Vec3::new(2.0, 1.0, 0.0))),
                 Box::new(LightDirectional::new(0.2, Vec3::new(1.0, 4.0, 4.0))),
             ],
+            is_diffuse,
+            is_reflective,
+            is_shadow,
+            is_specular,
         }
     }
 
@@ -131,7 +147,17 @@ impl Raytracer {
                 self.canv.set_pixel_from_rgba(
                     x,
                     y,
-                    &get_pixel_color(self.camera, direction, &self.spheres, &self.lights, 1),
+                    &get_pixel_color(
+                        self.camera,
+                        direction,
+                        &self.spheres,
+                        &self.lights,
+                        1,
+                        self.is_diffuse,
+                        self.is_shadow,
+                        self.is_specular,
+                        self.is_reflective,
+                    ),
                 );
             }
         }
@@ -146,6 +172,10 @@ fn get_pixel_color(
     spheres: &Vec<Sphere>,
     lights: &Vec<Box<dyn Light>>,
     recursion_depth: u8,
+    is_diffuse: bool,
+    is_shadow: bool,
+    is_specular: bool,
+    is_reflective: bool,
 ) -> RGBA {
     let opt_intersection = find_intersection(origin, direction, &spheres, 1.0, 1000.0);
     if opt_intersection.is_some() {
@@ -153,11 +183,14 @@ fn get_pixel_color(
         let normal = sphere.normal(intersection);
         let light_compute_info = LightComputeInfo {
             position: intersection,
-            direction: direction,
-            normal: normal,
+            direction,
+            normal,
+            is_diffuse,
+            is_shadow,
+            is_specular,
         };
         let recursion_color = compute_light(&lights, &light_compute_info, &sphere, &spheres);
-        if sphere.material.reflective <= 0.0 || recursion_depth <= 0 {
+        if sphere.material.reflective <= 0.0 || recursion_depth <= 0 || !is_reflective {
             return recursion_color;
         }
         let reflected = reflection(&direction, &normal);
@@ -167,6 +200,10 @@ fn get_pixel_color(
             spheres,
             lights,
             recursion_depth - 1,
+            is_diffuse,
+            is_shadow,
+            is_specular,
+            is_reflective,
         );
         return recursion_color * (1.0 - sphere.material.reflective)
             + reflected_color * sphere.material.reflective;

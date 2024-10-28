@@ -8,8 +8,12 @@ export class Raytracer {
 * @param {number} width
 * @param {number} height
 * @param {number} sphere_number
+* @param {boolean} is_diffuse
+* @param {boolean} is_specular
+* @param {boolean} is_shadow
+* @param {boolean} is_reflective
 */
-  constructor(width: number, height: number, sphere_number: number);
+  constructor(width: number, height: number, sphere_number: number, is_diffuse: boolean, is_specular: boolean, is_shadow: boolean, is_reflective: boolean);
 /**
 * @param {boolean} forward
 * @param {boolean} backward

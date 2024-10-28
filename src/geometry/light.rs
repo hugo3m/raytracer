@@ -28,6 +28,9 @@ pub struct LightComputeInfo {
     pub direction: Vec3,
     pub normal: Vec3,
     pub position: Vec3,
+    pub is_diffuse: bool,
+    pub is_specular: bool,
+    pub is_shadow: bool,
 }
 
 pub trait Light {
@@ -89,13 +92,24 @@ impl Light for LightPoint {
     fn compute(&self, info: &LightComputeInfo, material: &Material, spheres: &Vec<Sphere>) -> f64 {
         // light direction
         let direction = self.position - info.position;
-        let opt_shadow_intersection =
-            find_intersection(info.position, direction, spheres, 0.001, 1000.0);
-        if opt_shadow_intersection.is_some() {
-            return 0.0;
+        if info.is_shadow {
+            let opt_shadow_intersection =
+                find_intersection(info.position, direction, spheres, 0.001, 1000.0);
+            if opt_shadow_intersection.is_some() {
+                return 0.0;
+            }
         }
-        return self.compute_diffuse(info, &direction)
-            + self.compute_specular(info, &direction, material);
+        if !info.is_diffuse && !info.is_specular {
+            return 1.0;
+        }
+        let mut res = 0.0;
+        if info.is_diffuse {
+            res += self.compute_diffuse(info, &direction);
+        }
+        if info.is_specular {
+            res += self.compute_specular(info, &direction, material);
+        }
+        return res;
     }
 }
 
@@ -125,13 +139,25 @@ impl LightDirectional {
 
 impl Light for LightDirectional {
     fn compute(&self, info: &LightComputeInfo, material: &Material, spheres: &Vec<Sphere>) -> f64 {
-        // try to find object between the hit and the light
-        let opt_shadow_intersection =
-            find_intersection(info.position, self.direction, spheres, 0.001, 1000.0);
-        // if so return dark
-        if opt_shadow_intersection.is_some() {
-            return 0.0;
+        if info.is_shadow {
+            // try to find object between the hit and the light
+            let opt_shadow_intersection =
+                find_intersection(info.position, self.direction, spheres, 0.001, 1000.0);
+            // if so return dark
+            if opt_shadow_intersection.is_some() {
+                return 0.0;
+            }
         }
-        return self.compute_diffuse(info) + self.compute_specular(info, material);
+        if !info.is_diffuse && !info.is_specular {
+            return 1.0;
+        }
+        let mut res = 0.0;
+        if info.is_diffuse {
+            res += self.compute_diffuse(info);
+        }
+        if info.is_specular {
+            res += self.compute_specular(info, material);
+        }
+        return res;
     }
 }

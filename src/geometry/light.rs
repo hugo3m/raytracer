@@ -2,6 +2,7 @@ use crate::{material::Material, math::vec::reflection, math::vec::Vec3};
 
 use super::sphere::{find_intersection, Sphere};
 
+/// Compute the specular light
 fn computer_specular(
     intensity: f64,
     direction: &Vec3,
@@ -34,6 +35,7 @@ pub struct LightComputeInfo {
 }
 
 pub trait Light {
+    /// Compute the light for every lights
     fn compute(&self, info: &LightComputeInfo, material: &Material, spheres: &Vec<Sphere>) -> f64;
 }
 
@@ -92,16 +94,21 @@ impl Light for LightPoint {
     fn compute(&self, info: &LightComputeInfo, material: &Material, spheres: &Vec<Sphere>) -> f64 {
         // light direction
         let direction = self.position - info.position;
+        // if shadow is enabled
         if info.is_shadow {
+            // try to find intersection between the light and the position
             let opt_shadow_intersection =
                 find_intersection(info.position, direction, spheres, 0.001, 1000.0);
+            // if there is an intersection then there is a shadow
             if opt_shadow_intersection.is_some() {
                 return 0.0;
             }
         }
+        // if both diffuse and specular disabled
         if !info.is_diffuse && !info.is_specular {
             return 1.0;
         }
+        // otherwise compute each
         let mut res = 0.0;
         if info.is_diffuse {
             res += self.compute_diffuse(info, &direction);

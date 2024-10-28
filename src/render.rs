@@ -29,7 +29,7 @@ impl RGBA {
 
 impl ops::Mul<f64> for RGBA {
     type Output = Self;
-
+    /// Multiply RGBA by f64
     fn mul(self, _rhs: f64) -> Self {
         let mut r_f = f64::from(self.r) * _rhs;
         let mut g_f = f64::from(self.g) * _rhs;
@@ -58,7 +58,7 @@ impl ops::Mul<f64> for RGBA {
 
 impl ops::Add<Self> for RGBA {
     type Output = Self;
-
+    /// Add two RGBA
     fn add(self, _rhs: RGBA) -> Self {
         return Self::new(
             self.r.saturating_add(_rhs.r),
@@ -81,6 +81,7 @@ pub struct Canvas {
 }
 
 impl Canvas {
+    /// Creates a new canvas with width and height
     pub fn new(width: usize, height: usize) -> Self {
         Canvas {
             height,
@@ -91,7 +92,7 @@ impl Canvas {
             viewport: Viewport::new(1, 1, 1),
         }
     }
-
+    /// Get a pixel "flat" index in the raw array
     pub fn get_pixel_flat_index(&self, x: isize, y: isize) -> usize {
         // from (0,0 center) to (0,0 top)
         let x_index = x + self.w_max;
@@ -100,16 +101,16 @@ impl Canvas {
         let index: usize = ((y_index * self.w_max * 2) + x_index) as usize;
         return index;
     }
-
+    /// Set a pixel color
     pub fn set_pixel(&mut self, x: isize, y: isize, red: u8, green: u8, blue: u8, alpha: u8) {
         let index = self.get_pixel_flat_index(x, y);
         self.pixels[index] = RGBA::new(red, green, blue, alpha);
     }
-
+    /// Set pixel color from RGBA object
     pub fn set_pixel_from_rgba(&mut self, x: isize, y: isize, rgba: &RGBA) {
         self.set_pixel(x, y, rgba.r, rgba.g, rgba.b, rgba.a)
     }
-
+    /// Render "flat" raw array to frontend
     pub fn render(&self) -> Vec<u8> {
         let map: Vec<[u8; 4]> = self
             .pixels
@@ -120,7 +121,7 @@ impl Canvas {
         let res: Vec<u8> = map.iter().flatten().cloned().collect();
         return res;
     }
-
+    /// Convert a pixel of the canvas to a position in the scene on the viewport
     pub fn pixel_to_viewport(&self, x: isize, y: isize) -> Vec3 {
         // to float
         let x_f: f64 = (x as i32).into();

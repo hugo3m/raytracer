@@ -22,11 +22,12 @@ export default function Main() {
   const [isSpecular, setIsSpecular] = useState<boolean>(true);
   const [isReflective, setIsReflection] = useState<boolean>(true);
   const [isShadow, setIsShadow] = useState<boolean>(true);
+  const [cameraSpeed, setCameraSpeed] = useState<number>(3);
 
   useEffect(() => {
       const run = async () => {
           const WASM = await import("wasm");
-          const raytracer = new WASM.Raytracer(pixels, pixels, sphereNumber, isDiffuse, isSpecular, isShadow, isReflective);
+          const raytracer = new WASM.Raytracer(pixels, pixels, sphereNumber, isDiffuse, isSpecular, isShadow, isReflective, cameraSpeed);
           if (canvasRef.current){
               Engine.create(raytracer, canvasRef.current, pixels, pixels, setFps, setInputInfo);
           }
@@ -35,7 +36,7 @@ export default function Main() {
       return () => {
           Engine.destroy();
       }
-  }, [sphereNumber, pixels, isDiffuse, isSpecular, isShadow, isReflective]);
+  }, [sphereNumber, pixels, isDiffuse, isSpecular, isShadow, isReflective, cameraSpeed]);
 
   return (
   <div className="flex flex-1 flex-col">
@@ -74,6 +75,18 @@ export default function Main() {
                 <FormControlLabel control={<Checkbox checked={isReflective} onChange={(event) => setIsReflection(event.target.checked)} />} label="Reflection" />
                 <FormControlLabel control={<Checkbox checked={isShadow} onChange={(event) => setIsShadow(event.target.checked)} />} label="Shadow" />
               </FormGroup>
+              </div>
+              <div>
+                  <span>Camera speed</span>
+                  <Slider
+                      value={cameraSpeed}
+                      onChange={(event, value) => setCameraSpeed(value as number)}
+                      marks
+                      valueLabelDisplay="auto"
+                      min={1}
+                      step={1}
+                      max={10}
+                  />
               </div>
               <div>
                   <span>Number of pixels width and height</span>

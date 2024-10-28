@@ -144,16 +144,18 @@ export class Raytracer {
         wasm.__wbg_raytracer_free(ptr, 0);
     }
     /**
+    * Create a sphere with the given parameters
     * @param {number} width
     * @param {number} height
     * @param {number} sphere_number
     * @param {boolean} is_diffuse
     * @param {boolean} is_specular
     * @param {boolean} is_shadow
-    * @param {boolean} is_reflective
+    * @param {boolean} is_reflection
+    * @param {number} camera_speed
     */
-    constructor(width, height, sphere_number, is_diffuse, is_specular, is_shadow, is_reflective) {
-        const ret = wasm.raytracer_new(width, height, sphere_number, is_diffuse, is_specular, is_shadow, is_reflective);
+    constructor(width, height, sphere_number, is_diffuse, is_specular, is_shadow, is_reflection, camera_speed) {
+        const ret = wasm.raytracer_new(width, height, sphere_number, is_diffuse, is_specular, is_shadow, is_reflection, camera_speed);
         this.__wbg_ptr = ret >>> 0;
         RaytracerFinalization.register(this, this.__wbg_ptr, this);
         return this;

@@ -3,6 +3,9 @@
 import Engine, { InputInfo } from "@/utils/engine";
 import { useEffect, useRef, useState } from "react";
 
+import Checkbox from '@mui/material/Checkbox'
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormGroup from '@mui/material/FormGroup';
 import Input from "./input";
 import { Nullable } from "@/utils/type";
 import Slider from '@mui/material/Slider';
@@ -15,11 +18,15 @@ export default function Main() {
   const [inputInfo, setInputInfo] = useState<Nullable<InputInfo>>(null);
   const [pixels, setPixels] = useState<number>(600);
   const [sphereNumber, setSphereNumber] = useState<number>(3);
+  const [isDiffuse, setIsDiffuse] = useState<boolean>(true);
+  const [isSpecular, setIsSpecular] = useState<boolean>(true);
+  const [isReflective, setIsReflection] = useState<boolean>(true);
+  const [isShadow, setIsShadow] = useState<boolean>(true);
 
   useEffect(() => {
       const run = async () => {
           const WASM = await import("wasm");
-          const raytracer = new WASM.Raytracer(pixels, pixels, sphereNumber);
+          const raytracer = new WASM.Raytracer(pixels, pixels, sphereNumber, isDiffuse, isSpecular, isShadow, isReflective);
           if (canvasRef.current){
               Engine.create(raytracer, canvasRef.current, pixels, pixels, setFps, setInputInfo);
           }
@@ -28,7 +35,7 @@ export default function Main() {
       return () => {
           Engine.destroy();
       }
-  }, [sphereNumber, pixels]);
+  }, [sphereNumber, pixels, isDiffuse, isSpecular, isShadow, isReflective]);
 
   return (
   <div className="flex flex-1 flex-col">
@@ -41,7 +48,7 @@ export default function Main() {
                 Built using Rust web assembly and NextJS.
           </p>
       </div>
-      <div className="flex flex-2 flex-col max-w-[40vw] min-w-[40vw]">
+      <div className="flex flex-2 flex-col max-w-[30vw] min-w-[30vw]">
         <span className="">{fps.toFixed(0)}FPS</span>
         <canvas ref={canvasRef} width={pixels} height={pixels}/>
           {inputInfo ? <div className="flex flex-col items-center">
@@ -61,6 +68,14 @@ export default function Main() {
             <div>
               <span>Parameters:</span>
               <div>
+              <FormGroup>
+                <FormControlLabel control={<Checkbox checked={isDiffuse} onChange={(event) => setIsDiffuse(event.target.checked)} />} label="Diffuse light" />
+                <FormControlLabel control={<Checkbox checked={isSpecular} onChange={(event) => setIsSpecular(event.target.checked)}/>} label="Specular light" />
+                <FormControlLabel control={<Checkbox checked={isReflective} onChange={(event) => setIsReflection(event.target.checked)} />} label="Reflection" />
+                <FormControlLabel control={<Checkbox checked={isShadow} onChange={(event) => setIsShadow(event.target.checked)} />} label="Shadow" />
+              </FormGroup>
+              </div>
+              <div>
                   <span>Number of pixels width and height</span>
                   <Slider
                       value={pixels}
@@ -72,15 +87,17 @@ export default function Main() {
                       max={1000}
                   />
               </div>
-              <span>Number of spheres</span>
-              <Slider
-                  value={sphereNumber}
-                  onChange={(event, value) => setSphereNumber(value as number)}
-                  marks
-                  valueLabelDisplay="auto"
-                  min={1}
-                  max={10}
-              />
+              <div>
+                <span>Number of spheres</span>
+                <Slider
+                    value={sphereNumber}
+                    onChange={(event, value) => setSphereNumber(value as number)}
+                    marks
+                    valueLabelDisplay="auto"
+                    min={1}
+                    max={10}
+                />
+              </div>
             </div>
         </div>
       </div>

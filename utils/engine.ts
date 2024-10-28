@@ -62,6 +62,7 @@ class Engine {
     public static destroy(){
         if(Engine._instance){
             Engine._instance.isDestroyed = true;
+            Engine._instance.raytracer.free();
             delete Engine._instance;
         }
     }

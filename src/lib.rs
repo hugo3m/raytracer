@@ -37,6 +37,8 @@ struct Raytracer {
     // Is reflection compute
     is_reflection: bool,
     camera_speed: f64,
+    // quick fix for moving sphere
+    moving_sphere_going_right: bool,
 }
 
 #[wasm_bindgen]
@@ -54,14 +56,14 @@ impl Raytracer {
         camera_speed: f64,
     ) -> Raytracer {
         // main sphere
-        let mut spheres = vec![
+        let mut spheres: Vec<Sphere> = vec![
             Sphere::new(
                 Vec3::new(0.0, -5001.0, 0.0),
                 5000.0,
                 Material::new(RGBA::new(255, 255, 0, 255), 1000.0, 0.1),
             ),
             Sphere::new(
-                Vec3::new(0.0, -1.0, 3.0),
+                Vec3::new(0.0, 0.2, 5.0),
                 1.0,
                 Material::new(RGBA::new(255, 0, 200, 255), 500.0, 0.2),
             ),
@@ -107,7 +109,7 @@ impl Raytracer {
             ),
         ];
         // reduce number of sphere
-        spheres.truncate(sphere_number);
+        spheres.truncate(std::cmp::max(sphere_number, 2));
         Raytracer {
             canv: render::Canvas::new(width, height),
             camera: Vec3::new(0.0, 0.0, 0.75),
@@ -122,6 +124,7 @@ impl Raytracer {
             is_shadow,
             is_specular,
             camera_speed,
+            moving_sphere_going_right: true,
         }
     }
 
@@ -136,11 +139,15 @@ impl Raytracer {
         down: bool,
         delta_time: f64,
     ) {
-        let x: f64 = map_bool_to_f64(left) * -1.0 + map_bool_to_f64(right) * 1.0;
-        let y: f64 = map_bool_to_f64(down) * -1.0 + map_bool_to_f64(up) * 1.0;
-        let z: f64 = map_bool_to_f64(backward) * -1.0 + map_bool_to_f64(forward) * 1.0;
-        self.camera =
-            self.camera + (Vec3::new(x, y, z).normalize() * delta_time * self.camera_speed);
+        {
+            let x: f64 = map_bool_to_f64(left) * -1.0 + map_bool_to_f64(right) * 1.0;
+            let y: f64 = map_bool_to_f64(down) * -1.0 + map_bool_to_f64(up) * 1.0;
+            let z: f64 = map_bool_to_f64(backward) * -1.0 + map_bool_to_f64(forward) * 1.0;
+            self.camera =
+                self.camera + (Vec3::new(x, y, z).normalize() * delta_time * self.camera_speed);
+        }
+        let going_right = self._update_moving_sphere(&delta_time);
+        self.moving_sphere_going_right = going_right;
     }
 
     pub fn draw(&mut self) -> Vec<u8> {
@@ -172,6 +179,29 @@ impl Raytracer {
         }
         // return raw array of pixels
         return self.canv.render();
+    }
+
+    fn _update_moving_sphere(&mut self, delta_time: &f64) -> bool {
+        let speed = 1.0;
+        let close_limit: f64 = 0.1;
+        let mut going_right = self.moving_sphere_going_right;
+        if let Some(sphere) = self.spheres.get_mut(1) {
+            let limit_left: Vec3 = Vec3::new(-1.0, sphere.center.y, sphere.center.z);
+            let limit_right: Vec3 = Vec3::new(1.0, sphere.center.y, sphere.center.z);
+            if !going_right && (sphere.center - limit_left).norm() < close_limit {
+                going_right = true;
+            }
+            if going_right && (sphere.center - limit_right).norm() < close_limit {
+                going_right = false;
+            }
+
+            let sign = if going_right { 1.0 } else { -1.0 };
+
+            sphere.center = sphere.center + Vec3::new(speed * delta_time * sign, 0.0, 0.0);
+        }
+
+        // Write back to self
+        return going_right;
     }
 }
 

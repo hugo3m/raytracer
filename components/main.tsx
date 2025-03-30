@@ -83,7 +83,7 @@ export default function Main() {
                       onChange={(event, value) => setCameraSpeed(value as number)}
                       marks
                       valueLabelDisplay="auto"
-                      min={1}
+                      min={2}
                       step={1}
                       max={10}
                   />

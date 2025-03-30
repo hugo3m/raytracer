@@ -1,4 +1,4 @@
-# Raytracer
+# [Raytracer](https://raytracer-hugo3ms-projects.vercel.app/)
 
 Raytracer built in Rust web assembly served with NextJS, inspired from [Computer Graphics from Scratch, Gabriel Gambetta](https://gabrielgambetta.com/computer-graphics-from-scratch/index.html).
 

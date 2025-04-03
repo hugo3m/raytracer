@@ -23,9 +23,11 @@ export default function Main() {
   const [isReflective, setIsReflection] = useState<boolean>(true);
   const [isShadow, setIsShadow] = useState<boolean>(true);
   const [cameraSpeed, setCameraSpeed] = useState<number>(3);
+  const [isMobile, setIsMobile] = useState<boolean | undefined>(undefined);
 
   useEffect(() => {
       const run = async () => {
+        if (isMobile == undefined) return;
           const WASM = await import("wasm");
           const raytracer = new WASM.Raytracer(pixels, pixels, sphereNumber, isDiffuse, isSpecular, isShadow, isReflective, cameraSpeed);
           if (canvasRef.current){
@@ -36,7 +38,16 @@ export default function Main() {
       return () => {
           Engine.destroy();
       }
-  }, [sphereNumber, pixels, isDiffuse, isSpecular, isShadow, isReflective, cameraSpeed]);
+  }, [isMobile, sphereNumber, pixels, isDiffuse, isSpecular, isShadow, isReflective, cameraSpeed]);
+
+  useEffect(() => {
+    if (window.innerWidth <= 600) {
+      setIsMobile(true);
+    }
+    else {
+      setIsMobile(false);
+    }
+  }, []);
 
   const renderLaptop = () => {
     return (
@@ -47,7 +58,8 @@ export default function Main() {
             <p>
                 Homemade raytracer made by <a className="text-blue-700" href="https://github.com/hugo3m">hugo3m</a> inspired from
                 <a className="text-blue-700" href="https://gabrielgambetta.com/computer-graphics-from-scratch/index.html"> Computer graphics from scratch, Gabriel Gambetta</a>.
-                  Built using Rust web assembly and NextJS. You can find the repository at <a className="text-blue-700" href="https://github.com/hugo3m/raytracer">hugo3m/raytracer</a>.
+                  Built using Rust web assembly and NextJS. You can find the repository at <a className="text-blue-700" href="https://github.com/hugo3m/raytracer">hugo3m/raytracer</a>
+                  , or look at the <a className="text-blue-700" href="https://rasterizer-hugo3ms-projects.vercel.app/">rasterizer</a>.
             </p>
         </div>
         <div className="flex flex-2 flex-col items-center">
@@ -119,7 +131,7 @@ export default function Main() {
     )
   }
 
-  const renderPhone = () => {
+  const renderMobile = () => {
     return (
       <div className="flex flex-1 flex-col">
       <div className="flex flex-col justify-center">
@@ -128,7 +140,8 @@ export default function Main() {
             <p>
                 Homemade raytracer made by <a className="text-blue-700" href="https://github.com/hugo3m">hugo3m</a> inspired from
                 <a className="text-blue-700" href="https://gabrielgambetta.com/computer-graphics-from-scratch/index.html"> Computer graphics from scratch, Gabriel Gambetta</a>.
-                  Built using Rust web assembly and NextJS. You can find the repository at <a className="text-blue-700" href="https://github.com/hugo3m/raytracer">hugo3m/raytracer</a>.
+                  Built using Rust web assembly and NextJS. You can find the repository at <a className="text-blue-700" href="https://github.com/hugo3m/raytracer">hugo3m/raytracer</a>
+                  , or look at the <a className="text-blue-700" href="https://rasterizer-hugo3ms-projects.vercel.app/">rasterizer</a>.
             </p>
         </div>
         <div className="flex flex-2 flex-col items-center">
@@ -200,5 +213,13 @@ export default function Main() {
     )
   }
 
-  return (typeof window !== 'undefined' && window.innerWidth <= 600) ?  renderPhone() : renderLaptop();
+  const renderUndefined = () => {
+    return (
+      <div className="flex flex-1 flex-col">
+        <p>Loading...</p>
+      </div>
+    )
+  }
+
+  return isMobile == undefined ? renderUndefined() : isMobile ? renderMobile() : renderLaptop();
 }

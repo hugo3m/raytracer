@@ -14,12 +14,6 @@
   }
 }
 
-html {
-  min-width: 100vw;
-  max-width: 100vw;
-  min-height: 100vh;
-}
-
 body {
   color: var(--foreground);
   background: var(--background);
